@@ -19,7 +19,7 @@ jobs:
       - name: Build
         run: |
           npm ci
-          npm run build
+          npm run build -- --mode=pages
         
       - uses: actions/upload-pages-artifact@v1.0.3
         with:
