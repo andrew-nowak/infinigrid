@@ -24,7 +24,7 @@ const Card: React.FC<CardProps> = ({ img, labels, description }) => {
     };
   }, []);
   return (
-    <>
+    <div className="card">
       <p className="no">{img}</p>
       <div className="labelcontainer">
         {labels.map((l) => (
@@ -34,13 +34,13 @@ const Card: React.FC<CardProps> = ({ img, labels, description }) => {
         ))}
       </div>
       <p>{description}</p>
-    </>
+    </div>
   );
 };
 
 
 class Repo {
-  async loadRange({ from, to }: Range): Promise<Range & {results: CardProps[]}> {
+  async loadRange({ from, to }: Range): Promise<Range & { results: CardProps[] }> {
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve({
@@ -65,10 +65,25 @@ const columnSpec: ColumnSpec = {
 function App() {
 
   return (
-    <>
-      {/*<p>There are {columnCount} columns here!</p>*/}
-      <Grid load={repo.loadRange} columnSpec={columnSpec} Card={Card} />
-    </>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      height: '100%',
+    }}>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '4rem'
+      }}>
+        SEARCH BAR AND STUFF HERE
+      </div>
+      <div style={{ width: '100%', display: 'flex', overflowY: 'hidden' }}>
+        <div style={{ width: '24rem' }}>COLLECTION PANEL</div>
+        {/*<p>There are {columnCount} columns here!</p>*/}
+        <Grid load={repo.loadRange} columnSpec={columnSpec} Card={Card} />
+      </div>
+    </div>
   );
 }
 
