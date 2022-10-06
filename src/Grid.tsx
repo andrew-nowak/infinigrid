@@ -1,4 +1,5 @@
-import { PropsWithChildren, useCallback, useEffect, useRef, useState } from "react";
+import { PropsWithChildren, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { getScrollTop, persistScrollTop } from "./persist";
 import { debounce } from "./util";
 
 export type ColumnSpecValue = { minWidth: number, columns: number };
@@ -28,7 +29,7 @@ export type GridProps<T> = {
   load: (range: Range) => Promise<Range & { results: T[] }>;
   columnSpec: ColumnSpec;
   // This card should explicitly set its own height, and take steps to ensure that it does not exceed that height
-  Card: React.ComponentType<T>;
+  Card: React.ComponentType<T> & { height: number };
 };
 
 type Data<T> = { loading: true } | { value: T };
@@ -48,7 +49,7 @@ export function Grid<T>({
       const nfv = Array.from(pfv);
 
       for (let i = r.from; i < r.to; i++) {
-        nfv[i] = { loading: true };
+        if (nfv[i] === undefined) nfv[i] = { loading: true };
       }
 
       return nfv;
@@ -59,7 +60,7 @@ export function Grid<T>({
 
         for (let i = 0; i < nfv.length; i++) {
           if (i >= r.from && i < r.to) {
-            nfv[i] = {value: res.results[i - r.from]};
+            nfv[i] = { value: res.results[i - r.from] };
           } else if (i < r.from - 500 || i > r.to + 500) {
             // unload results that are significantly outside of current scroll
             delete nfv[i];
@@ -72,24 +73,12 @@ export function Grid<T>({
   }, []);
 
   // fetch row height from the computed height of the rows - allows the cards to set their own height
-  const getRowHeight = useCallback(() => {
-    if (r.current) {
-      const rows = getComputedStyle(r.current).gridTemplateRows.split(" ");
-      const rowGap = parseInt(getComputedStyle(r.current).rowGap, 10);
-      if (rows.length) {
-        const firstRow = parseInt(rows[0], 10);
-        return (firstRow + rowGap);
-      }
-    }
-    throw new Error("failed to calculate row height!!");
-  }, [r.current]);
-
   const [gridViewWidth, setGridViewWidth] = useState(r.current?.clientWidth ?? 400);
   const columnCount =
     columnSpec.spec?.sort(columnSpecSort)?.find(({ minWidth }) => minWidth <= gridViewWidth)?.columns ?? columnSpec.default;
 
-  useEffect(() => {
-    console.log('mounting resize handler');
+  useLayoutEffect(() => {
+    console.log('mounting resize handler', !!r.current);
     r.current?.clientWidth && setGridViewWidth(r.current.clientWidth);
     const resizeHandler = debounce(() => {
       console.log('handling resize');
@@ -102,23 +91,32 @@ export function Grid<T>({
 
   const rowsToLoad = 6;
   useEffect(() => {
-    const rowHeight = getRowHeight();
-    const topRow = (r.current?.scrollTop ?? 0) / rowHeight;
-    const firstCard = Math.floor(topRow) * columnCount;
-    const lastCard = firstCard + (columnCount * rowsToLoad);
-    const range = { from: firstCard, to: lastCard };
-    load(range);
+    const rowHeight = Card.height + 16;
+    const scrollTop = getScrollTop();
+    if (outerEl.current && scrollTop !== 0) {
+      console.log('scrolling to scrollTop', scrollTop, columnCount);
+      outerEl.current.scrollTop = scrollTop;
+    } else {
+      const topRow = getScrollTop() / rowHeight;
+      const firstCard = Math.floor(topRow) * columnCount;
+      const lastCard = firstCard + (columnCount * rowsToLoad);
+      const range = { from: firstCard, to: lastCard };
+      console.log('firstload', range);
+      load(range);
+    }
   }, []);
 
   useEffect(() => {
-    if (outerEl.current !== null) {
+    if (outerEl.current !== null && r.current !== null) {
       const el = outerEl.current;
       const scrollHandler = debounce(() => {
-        const rowHeight = getRowHeight();
-        console.log(`scrolled to ${el.scrollTop}; rowHeight is ${rowHeight}`);
+        const rowHeight = Card.height + 16;
+        console.log(`scrolled to ${el.scrollTop}; rowHeight is ${rowHeight}; columnCount is ${columnCount}`);
         const topRow = el.scrollTop / rowHeight;
         const firstCard = Math.floor(topRow) * columnCount;
         console.log(`first in view is ${firstCard}`);
+        console.log('persisting', el.scrollTop);
+        persistScrollTop(el.scrollTop);
         load({ from: Math.max(0, firstCard), to: Math.min(PAGE_MAX_ELS, firstCard + (columnCount * rowsToLoad)) });
       }, 333);
       el.addEventListener('scroll', scrollHandler);
@@ -126,10 +124,10 @@ export function Grid<T>({
         el.removeEventListener('scroll', scrollHandler);
       };
     }
-  }, [getRowHeight, load, columnCount, outerEl.current]);
+  }, [load, columnCount, outerEl.current]);
 
   const columnTemplate = `repeat(${columnCount}, 1fr)`;
-  const rowTemplate = `repeat(${Math.ceil(PAGE_MAX_ELS / columnCount)}, 1fr)`;
+  const rowTemplate = `repeat(${Math.ceil(PAGE_MAX_ELS / columnCount)}, ${Card.height}px)`;
 
   return (
     <div ref={outerEl} style={{ overflowY: 'scroll', width: '100%' }}>

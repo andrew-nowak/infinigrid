@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Range, ColumnSpec, Grid } from "./Grid";
 import "./App.css";
+import { clearScrollTop } from "./persist";
 
 const card = (i: string) => ({
   img: i,
@@ -16,7 +17,7 @@ type CardProps = {
 
 
 
-const Card: React.FC<CardProps> = ({ img, labels, description }) => {
+const Card: React.FC<CardProps> & { height: number } = ({ img, labels, description }) => {
   useEffect(() => {
     console.log(`mounting ${description}`);
     return () => {
@@ -37,6 +38,8 @@ const Card: React.FC<CardProps> = ({ img, labels, description }) => {
     </div>
   );
 };
+
+Card.height = 304;
 
 
 class Repo {
@@ -75,6 +78,9 @@ function App() {
         justifyContent: 'center',
         alignItems: 'center',
         minHeight: '4rem'
+      }} onClick={() => {
+        clearScrollTop();
+        window.location.reload();
       }}>
         SEARCH BAR AND STUFF HERE
       </div>
