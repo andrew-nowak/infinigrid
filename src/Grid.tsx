@@ -11,7 +11,7 @@ export type ColumnSpec = {
 const columnSpecSort = (a: ColumnSpecValue, b: ColumnSpecValue): number =>
   b.minWidth - a.minWidth;
 
-const PAGE_MAX_ELS = 10000;
+const PAGE_MAX_ELS = 100000;
 
 export type Range = { from: number; to: number };
 
