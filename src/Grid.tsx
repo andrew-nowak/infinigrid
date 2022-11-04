@@ -1,6 +1,6 @@
 import { PropsWithChildren, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { getScrollTop, persistScrollTop } from "./persist";
-import { debounce } from "./util";
+import { debounce, maybeDebounce } from "./util";
 
 export type ColumnSpecValue = { minWidth: number, columns: number };
 export type ColumnSpec = {
@@ -109,22 +109,41 @@ export function Grid<T>({
   useEffect(() => {
     if (outerEl.current !== null && r.current !== null) {
       const el = outerEl.current;
-      const scrollHandler = debounce(() => {
-        const rowHeight = Card.height + 16;
-        console.log(`scrolled to ${el.scrollTop}; rowHeight is ${rowHeight}; columnCount is ${columnCount}`);
-        const topRow = el.scrollTop / rowHeight;
-        const firstCard = Math.floor(topRow) * columnCount;
-        console.log(`first in view is ${firstCard}`);
-        console.log('persisting', el.scrollTop);
-        persistScrollTop(el.scrollTop);
-        load({ from: Math.max(0, firstCard), to: Math.min(PAGE_MAX_ELS, firstCard + (columnCount * rowsToLoad)) });
-      }, 333);
+
+      const scrollHandler = maybeDebounce(
+        ({ from, to }: { from: number; to: number }) => {
+          console.log('persisting', el.scrollTop);
+          persistScrollTop(el.scrollTop);
+          load({ from, to });
+        },
+        () => {
+          const rowHeight = Card.height + 16;
+          const topRow = Math.max(0, (el.scrollTop / rowHeight) - 2);
+          const firstCard = Math.floor(topRow) * columnCount;
+          console.log(`scrolled to ${el.scrollTop}; rowHeight is ${rowHeight}; columnCount is ${columnCount}`, `first in view is ${firstCard}`);
+          const from = Math.max(0, firstCard)
+          const to = Math.min(PAGE_MAX_ELS, firstCard + (columnCount * rowsToLoad))
+
+          const fromLoaded = !!fv[from];
+          const toLoaded = !!fv[to - 1];
+
+          // skip load if entire range is already loaded
+          // FIXME that's not what this does though! this only checks that the start and end have been loaded! but I don't want to loop in this func D:
+          const skipLoad = fromLoaded && toLoaded;
+          // skip the debouncing if the range to load touches a range already loaded (ie. user is scrolling slowly rather than quickly)
+          const loadImmediately = (fromLoaded || toLoaded) && !(fromLoaded && toLoaded);
+
+          return ({ immediate: loadImmediately, skip: skipLoad, args: [{ from, to }] });
+        },
+        333
+      );
+
       el.addEventListener('scroll', scrollHandler);
       return function() {
         el.removeEventListener('scroll', scrollHandler);
       };
     }
-  }, [load, columnCount, outerEl.current]);
+  }, [load, columnCount, outerEl.current, fv]);
 
   const columnTemplate = `repeat(${columnCount}, 1fr)`;
   const rowTemplate = `repeat(${Math.ceil(PAGE_MAX_ELS / columnCount)}, ${Card.height}px)`;
