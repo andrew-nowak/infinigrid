@@ -110,10 +110,11 @@ export function Grid<T>({
     if (outerEl.current !== null && r.current !== null) {
       const el = outerEl.current;
 
+      const doPersistScrollTop = debounce(persistScrollTop, 200);
+
       const scrollHandler = maybeDebounce(
         ({ from, to }: { from: number; to: number }) => {
           console.log('persisting', el.scrollTop);
-          persistScrollTop(el.scrollTop);
           load({ from, to });
         },
         () => {
@@ -121,6 +122,8 @@ export function Grid<T>({
           const topRow = Math.max(0, (el.scrollTop / rowHeight) - 2);
           const firstCard = Math.floor(topRow) * columnCount;
           console.log(`scrolled to ${el.scrollTop}; rowHeight is ${rowHeight}; columnCount is ${columnCount}`, `first in view is ${firstCard}`);
+          doPersistScrollTop(el.scrollTop);
+
           const from = Math.max(0, firstCard)
           const to = Math.min(PAGE_MAX_ELS, firstCard + (columnCount * rowsToLoad))
 

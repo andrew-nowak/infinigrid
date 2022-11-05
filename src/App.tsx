@@ -39,7 +39,7 @@ const Card: React.FC<CardProps> & { height: number } = ({ img, labels, descripti
   );
 };
 
-Card.height = 304;
+Card.height = 240;
 
 
 class Repo {
@@ -62,7 +62,7 @@ const repo: Repo = new Repo();
 
 const columnSpec: ColumnSpec = {
   default: 2,
-  spec: [{ minWidth: 800, columns: 3 }, { minWidth: 1200, columns: 4 }, { minWidth: 1600, columns: 5 }]
+  spec: [{ minWidth: 400, columns: 3 }, { minWidth: 600, columns: 4 }, { minWidth: 900, columns: 5 }]
 };
 
 function App() {
