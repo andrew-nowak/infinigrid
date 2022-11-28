@@ -152,32 +152,37 @@ export function Grid<T>({
   const rowTemplate = `repeat(${Math.ceil(PAGE_MAX_ELS / columnCount)}, ${Card.height}px)`;
 
   return (
-    <div ref={outerEl} style={{ overflowY: 'scroll', width: '100%' }}>
-      <div
-        ref={r}
-        style={{
-          display: 'grid',
-          width: '100%',
-          height: 'fit-content',
-          gridTemplateRows: rowTemplate,
-          gridTemplateColumns: columnTemplate,
-          gridAutoRows: '1fr',
-          gap: '1rem',
-        }}
-      >
-        {fv.map(
-          (i, l) =>
-            !!i && <CardBack key={l} row={l / columnCount} col={l % columnCount}>{
-              ("value" in i ? (
-                <Card
-                  {...i.value}
-                />
-              ) : (
-                <p>LOADING</p>
-              ))
-            }</CardBack>
-        )}
+    <>
+      <div ref={outerEl} style={{ overflowY: 'scroll', width: '100%' }} className="hide-scrollbar">
+        <div
+          ref={r}
+          style={{
+            display: 'grid',
+            width: '100%',
+            height: 'fit-content',
+            gridTemplateRows: rowTemplate,
+            gridTemplateColumns: columnTemplate,
+            gridAutoRows: '1fr',
+            gap: '1rem',
+          }}
+        >
+          {fv.map(
+            (i, l) =>
+              !!i && <CardBack key={l} row={l / columnCount} col={l % columnCount}>{
+                ("value" in i ? (
+                  <Card {...i.value} />
+                ) : (
+                  <p>LOADING</p>
+                ))
+              }</CardBack>
+          )}
+        </div>
       </div>
-    </div>
+      <div>
+        <div style={{ backgroundColor: 'orange', width: '25px', height: '25px' }}></div>
+        <div style={{ backgroundColor: 'green', width: '25px', height: '25px' }}></div>
+        <div style={{ backgroundColor: 'blue', width: '25px', height: '25px' }}></div>
+      </div>
+    </>
   );
 };

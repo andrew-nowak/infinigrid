@@ -78,3 +78,10 @@ html {
 *:after {
   box-sizing: inherit;
 }
+
+.hide-scrollbar {
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
